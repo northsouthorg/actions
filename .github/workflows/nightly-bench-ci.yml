@@ -28,9 +28,10 @@ jobs:
 
     steps:
       - name: Checkout Tests Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: northsouthorg/tests
+          ref: main
           token: ${{ secrets.PRIVATE_REPO_PAT }} # Required if other-repo is private
           path: tests
           
