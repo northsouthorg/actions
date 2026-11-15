@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  nightly:
     runs-on: ubuntu-latest
 
     services:
@@ -27,9 +27,13 @@ jobs:
           - 6380:6379
 
     steps:
-      - name: Checkout App Repository
+      - name: Checkout Tests Repository
         uses: actions/checkout@v4
-
+        with:
+          repository: northsouthorg/tests
+          token: ${{ secrets.PRIVATE_REPO_PAT }} # Required if other-repo is private
+          path: tests
+          
       - name: Setup Python & Node
         uses: actions/setup-python@v5
         with:
@@ -47,7 +51,7 @@ jobs:
 
       - name: Initialize Frappe Bench
         run: |
-          bench init --skip-redis-config-generation --frappe-branch version-16 ~/frappe-bench
+          bench init --skip-redis-config-generation --frappe-branch version-16 --apps_path ~/tests/apps.json ~/frappe-bench
           cd ~/frappe-bench
           bench set-config -g db_host 127.0.0.1
           bench set-config -g redis_cache redis://127.0.0.1:6379
@@ -56,9 +60,15 @@ jobs:
       - name: Install App & Create Site
         run: |
           cd ~/frappe-bench
-          bench get-app erpnext
+          jq -r '.[] | .url' sites/apps.json | while read -r url; do
+            branch=$(jq -r --arg url "$url" '.[] | select(.url==$url) | .branch // "version-15"' ~/tests/apps.json)
+            bench get-app "$url" --branch "$branch"
+          done
           bench new-site test_site --mariadb-root-password root --admin-password admin --no-mariadb-socket
-          bench --site test_site install-app erpnext
+          jq -r '.[] | .url' sites/apps.json | while read -r url; do
+            branch=$(jq -r --arg url "$url" '.[] | select(.url==$url) | .branch // "version-15"' ~/tests/apps.json)
+            bench --site test_site install-app "$url"
+          done
           bench --site test_site set-config allow_tests true
 
       - name: Run Tests
