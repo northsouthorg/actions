@@ -49,7 +49,7 @@ jobs:
 
       - name: Initialize Frappe Bench
         run: |
-          bench init --skip-redis-config-generation --frappe-branch version-16 --apps_path ~/actions/apps.json ~/frappe-bench
+          bench init --skip-redis-config-generation --frappe-branch version-16 ~/frappe-bench
           cd ~/frappe-bench
           bench set-config -g db_host 127.0.0.1
           bench set-config -g redis_cache redis://127.0.0.1:6379
